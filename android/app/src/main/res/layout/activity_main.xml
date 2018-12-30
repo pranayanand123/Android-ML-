@@ -1,67 +1,89 @@
 <?xml version="1.0" encoding="utf-8"?>
-<FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:tools="http://schemas.android.com/tools"
-    android:id="@+id/activity_main"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:paddingBottom="@dimen/activity_vertical_margin"
-    android:paddingLeft="@dimen/activity_horizontal_margin"
-    android:paddingRight="@dimen/activity_horizontal_margin"
-    android:paddingTop="@dimen/activity_vertical_margin"
+    android:orientation="vertical"
+    android:padding="16dp"
     tools:context="pranay.example.com.digitclassifierml.MainActivity">
 
-    <com.wonderkiln.camerakit.CameraView
-        android:id="@+id/cameraView"
-        android:layout_width="300dp"
-        android:layout_height="300dp"
-        android:layout_gravity="center|top" />
+    <TableLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content">
 
+        <TextView
+            style="@style/ResultText"
+            android:text="@string/prediction"/>
+
+        <TextView
+            android:id="@+id/tv_prediction"
+            style="@style/ResultText"
+            android:textSize="24sp"
+            android:textColor="@android:color/black"
+            android:text="@string/empty"
+            tools:text="1"/>
+
+        <TableRow>
+
+            <TextView
+                style="@style/ResultText"
+                android:text="@string/probability"/>
+
+            <TextView
+                style="@style/ResultText"
+                android:text="@string/timecost"/>
+
+        </TableRow>
+
+        <TableRow>
+
+            <TextView
+                android:id="@+id/tv_probability"
+                style="@style/ResultText"
+                android:textColor="@android:color/black"
+                android:text="@string/empty"
+                tools:text="0.9"/>
+
+
+            <TextView
+                android:id="@+id/tv_timecost"
+                style="@style/ResultText"
+                android:textColor="@android:color/black"
+                android:text="@string/empty"
+                tools:text="10ms"/>
+
+        </TableRow>
+
+    </TableLayout>
+
+    <com.nex3z.fingerpaintview.FingerPaintView
+        android:id="@+id/fpv_paint"
+        android:layout_width="200dp"
+        android:layout_height="200dp"
+        android:layout_gravity="center"
+        android:layout_marginTop="16dp"
+        android:foreground="@drawable/shape_rect_border"/>
 
     <LinearLayout
         android:layout_width="match_parent"
-        android:layout_height="80dp"
-        android:layout_gravity="center|top"
-        android:layout_marginTop="300dp"
-        android:gravity="center"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="16dp"
         android:orientation="horizontal">
 
-        <ImageView
-            android:id="@+id/imageViewResult"
-            android:layout_width="75dp"
-            android:layout_height="75dp"
-            android:padding="2dp" />
-
-        <TextView
-            android:id="@+id/textViewResult"
+        <Button
+            android:id="@+id/btn_detect"
             android:layout_width="match_parent"
-            android:layout_height="80dp"
-            android:fadeScrollbars="false"
-            android:gravity="center"
-            android:maxLines="15"
-            android:scrollbars="vertical"
-            android:textColor="@android:color/black" />
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:text="@string/detect"/>
+
+        <Button
+            android:id="@+id/btn_clear"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:text="@string/clear"/>
 
     </LinearLayout>
 
-
-    <Button
-        android:id="@+id/btnToggleCamera"
-        android:layout_width="match_parent"
-        android:layout_height="48dp"
-        android:layout_gravity="bottom|center"
-        android:layout_marginBottom="50dp"
-        android:text="@string/toggle_camera"
-        android:textAllCaps="false"
-        android:textColor="@android:color/black" />
-
-    <Button
-        android:id="@+id/btnDetectObject"
-        android:layout_width="match_parent"
-        android:layout_height="48dp"
-        android:layout_gravity="bottom|center"
-        android:text="@string/detect_object"
-        android:textAllCaps="false"
-        android:textColor="@android:color/black"
-        android:visibility="gone" />
-
-</FrameLayout>
+</LinearLayout>

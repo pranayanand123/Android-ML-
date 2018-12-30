@@ -1,149 +1,78 @@
 package pranay.example.com.digitclassifierml;
 
-import android.support.v7.app.AppCompatActivity;
-import android.os.Bundle;
 import android.graphics.Bitmap;
 import android.os.Bundle;
 import android.support.v7.app.AppCompatActivity;
-import android.text.method.ScrollingMovementMethod;
-import android.view.View;
-import android.widget.Button;
-import android.widget.ImageView;
+import android.util.Log;
 import android.widget.TextView;
+import android.widget.Toast;
 
-import com.wonderkiln.camerakit.CameraKitError;
-import com.wonderkiln.camerakit.CameraKitEvent;
-import com.wonderkiln.camerakit.CameraKitEventListener;
-import com.wonderkiln.camerakit.CameraKitImage;
-import com.wonderkiln.camerakit.CameraKitVideo;
-import com.wonderkiln.camerakit.CameraView;
+import com.nex3z.fingerpaintview.FingerPaintView;
 
-import java.util.List;
-import java.util.concurrent.Executor;
-import java.util.concurrent.Executors;
+import java.io.IOException;
+
+import butterknife.BindView;
+import butterknife.ButterKnife;
+import butterknife.OnClick;
 
 public class MainActivity extends AppCompatActivity {
 
-    private static final String MODEL_PATH = "mnist_ml.tflite";
-    private static final String LABEL_PATH = "labels.txt";
-    private static final int INPUT_SIZE = 28;
+    private static final String LOG_TAG = MainActivity.class.getSimpleName();
 
-    private Classifier classifier;
+    @BindView(R.id.fpv_paint) FingerPaintView mFpvPaint;
+    @BindView(R.id.tv_prediction) TextView mTvPrediction;
+    @BindView(R.id.tv_probability) TextView mTvProbability;
+    @BindView(R.id.tv_timecost) TextView mTvTimeCost;
 
-    private Executor executor = Executors.newSingleThreadExecutor();
-    private TextView textViewResult;
-    private Button btnDetectObject, btnToggleCamera;
-    private ImageView imageViewResult;
-    private CameraView cameraView;
+    private TensorflowClassifier mClassifier;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
-        cameraView = findViewById(R.id.cameraView);
-        imageViewResult = findViewById(R.id.imageViewResult);
-        textViewResult = findViewById(R.id.textViewResult);
-        textViewResult.setMovementMethod(new ScrollingMovementMethod());
-
-        btnToggleCamera = findViewById(R.id.btnToggleCamera);
-        btnDetectObject = findViewById(R.id.btnDetectObject);
-
-        cameraView.addCameraKitListener(new CameraKitEventListener() {
-            @Override
-            public void onEvent(CameraKitEvent cameraKitEvent) {
-
-            }
-
-            @Override
-            public void onError(CameraKitError cameraKitError) {
-
-            }
-
-            @Override
-            public void onImage(CameraKitImage cameraKitImage) {
-
-                Bitmap bitmap = cameraKitImage.getBitmap();
-
-                bitmap = Bitmap.createScaledBitmap(bitmap, INPUT_SIZE, INPUT_SIZE, false);
-
-                imageViewResult.setImageBitmap(bitmap);
-
-                final List<Classifier.Recognition> results = classifier.recognizeImage(bitmap);
-
-                textViewResult.setText(results.toString());
-
-            }
-
-            @Override
-            public void onVideo(CameraKitVideo cameraKitVideo) {
-
-            }
-        });
-
-        btnToggleCamera.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                cameraView.toggleFacing();
-            }
-        });
-
-        btnDetectObject.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                cameraView.captureImage();
-            }
-        });
-
-        initTensorFlowAndLoadModel();
+        ButterKnife.bind(this);
+        init();
     }
 
-    @Override
-    protected void onResume() {
-        super.onResume();
-        cameraView.start();
+    @OnClick(R.id.btn_detect)
+    void onDetectClick() {
+        if (mClassifier == null) {
+            Log.e(LOG_TAG, "onDetectClick(): Classifier is not initialized");
+            return;
+        } else if (mFpvPaint.isEmpty()) {
+            Toast.makeText(this, R.string.please_write_a_digit, Toast.LENGTH_SHORT).show();
+            return;
+        }
+
+        Bitmap image = mFpvPaint.exportToBitmap(
+                TensorflowClassifier.DIM_IMG_SIZE_WIDTH, TensorflowClassifier.DIM_IMG_SIZE_HEIGHT);
+        // The model is trained on images with black background and white font
+        Bitmap inverted = ImageUtil.invert(image);
+        Result result = mClassifier.classify(inverted);
+        renderResult(result);
     }
 
-    @Override
-    protected void onPause() {
-        cameraView.stop();
-        super.onPause();
+    @OnClick(R.id.btn_clear)
+    void onClearClick() {
+        mFpvPaint.clear();
+        mTvPrediction.setText(R.string.empty);
+        mTvProbability.setText(R.string.empty);
+        mTvTimeCost.setText(R.string.empty);
     }
 
-    @Override
-    protected void onDestroy() {
-        super.onDestroy();
-        executor.execute(new Runnable() {
-            @Override
-            public void run() {
-                classifier.close();
-            }
-        });
+    private void init() {
+        try {
+            mClassifier = new TensorflowClassifier(this);
+        } catch (IOException e) {
+            Toast.makeText(this, R.string.failed_to_create_classifier, Toast.LENGTH_LONG).show();
+            Log.e(LOG_TAG, "init(): Failed to create tflite model", e);
+        }
     }
 
-    private void initTensorFlowAndLoadModel() {
-        executor.execute(new Runnable() {
-            @Override
-            public void run() {
-                try {
-                    classifier = TensorflowClassifier.create(
-                            getAssets(),
-                            MODEL_PATH,
-                            LABEL_PATH,
-                            INPUT_SIZE);
-                    makeButtonVisible();
-                } catch (final Exception e) {
-                    throw new RuntimeException("Error initializing TensorFlow!", e);
-                }
-            }
-        });
-    }
-
-    private void makeButtonVisible() {
-        runOnUiThread(new Runnable() {
-            @Override
-            public void run() {
-                btnDetectObject.setVisibility(View.VISIBLE);
-            }
-        });
+    private void renderResult(Result result) {
+        mTvPrediction.setText(String.valueOf(result.getNumber()));
+        mTvProbability.setText(String.valueOf(result.getProbability()));
+        mTvTimeCost.setText(String.format(getString(R.string.timecost_value),
+                result.getTimeCost()));
     }
 }
